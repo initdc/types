@@ -1,14 +1,3 @@
-# types
-
-Bring the Rust [Result Option] types to Golang
-
-## Installation
-
-  `go get github.com/initdc/types`
-
-## Usage
-
-```go
 package e2e_test
 
 import (
@@ -47,8 +36,3 @@ func TestE2E(t *testing.T) {
 	fmt.Printf("%#v\n", r2)
 	fmt.Printf("%#v\n", e2)
 }
-```
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/initdc/types.

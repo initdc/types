@@ -1,91 +1,329 @@
 package option
 
 import (
+	"github.com/initdc/types/result"
+	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 )
 
-func TestIsSome(t *testing.T) {
-	s := Some(1)
-	if s.IsSome() == false {
-		t.Error("TestIsSome case 1 failed")
+func TestSome(t *testing.T) {
+  var a = Option[int]{
+		value: 1,
+		some: true,
+		assigned: true,
 	}
 
-	n := None[int]()
-	if n.IsSome() == true {
-		t.Error("TestIsSome case 2 failed")
-	}
+	var b Option[int]
+	b.Some(1)
+
+	c := Some[int](1)
+	
+	assert.Equal(t, a, b)
+	assert.Equal(t, a, c)
+	assert.Equal(t, b, c)
 }
 
-func TestIsNone(t *testing.T) {
-	var s Option[int]
-	s.Some(1)
-	if s.IsNone() == true {
-		t.Error("TestIsNone case 1 failed")
+func TestNone(t *testing.T) {
+  var a = Option[int]{
+		some: false,
+		assigned: true,
 	}
 
-	var n Option[int]
-	n.None()
-	if n.IsNone() == false {
-		t.Error("TestIsNone case 2 failed")
-	}
+	var b Option[int]
+	b.None()
+
+	c := None[int]()
+	
+	assert.Equal(t, a, b)
+	assert.Equal(t, a, c)
+	assert.Equal(t, b, c)
+}
+
+func TestIsSome(t *testing.T) {
+	s := Some(1)
+	assert.True(t, s.IsSome())
+
+	n := None[int]()
+	assert.False(t, n.IsSome())
 }
 
 func TestIsSomeAnd(t *testing.T) {
 	s := Some(1)
-	if s.IsSomeAnd(func(int) bool { return true }) == false {
-		t.Error("TestIsSomeAnd case 1 failed")
-	}
+	assert.True(t, s.IsSomeAnd(func(int) bool { return true }))
+	assert.False(t, s.IsSomeAnd(func(int) bool { return false }))
 
 	n := None[int]()
-	if n.IsSomeAnd(func(int) bool { return true }) == true {
-		t.Error("TestIsSomeAnd case 2 failed")
-	}
+	assert.False(t, n.IsSomeAnd(func(int) bool { return true }))
+}
+
+func TestIsNone(t *testing.T) {
+	s := Some(1)
+	assert.False(t, s.IsNone())
+
+	n := None[int]()
+	assert.True(t, n.IsNone())
 }
 
 func TestIsNoneOr(t *testing.T) {
 	s := Some(1)
-	if s.IsNoneOr(func(int) bool { return false }) == true {
-		t.Error("TestIsNoneOr case 1 failed")
-	}
+	assert.False(t, s.IsNoneOr(func(int) bool { return false }))
+	assert.True(t, s.IsNoneOr(func(int) bool { return true }))
 
 	n := None[int]()
-	if n.IsNoneOr(func(int) bool { return false }) == false {
-		t.Error("TestIsNoneOr case 2 failed")
-	}
+	assert.True(t, n.IsNoneOr(func(int) bool { return false }))
+}
+
+func TestExpect(t *testing.T) {
+	s := Some(1)
+	assert.Equal(t, s.Expect("error"), 1)
+
+	n := None[int]()
+	assert.Panics(t, func() { n.Expect("error") })
 }
 
 func TestUnwrap(t *testing.T) {
 	s := Some(1)
-	if s.Unwrap() != 1 {
-		t.Error("TestUnwrap case 1 failed")
-	}
+	assert.Equal(t, s.Unwrap(), 1)
 
 	n := None[int]()
-	if n.UnwrapOr(99) != 99 {
-		t.Error("TestUnwrap case 2 failed")
-	}
+	assert.Panics(t, func() { n.Unwrap() })
+}
+
+func TestUnwrapOr(t *testing.T) {
+	s := Some(1)
+	assert.Equal(t, s.UnwrapOr(99), 1)
+
+	n := None[int]()
+	assert.Equal(t, n.UnwrapOr(99), 99)
 }
 
 func TestUnwrapOrElse(t *testing.T) {
 	s := Some(1)
-	if s.UnwrapOrElse(func() int { return 99 }) != 1 {
-		t.Error("TestUnwrapOrElse case 1 failed")
-	}
+	assert.Equal(t, s.UnwrapOrElse(func() int { return 99 }), 1)
 
 	n := None[int]()
-	if n.UnwrapOrElse(func() int { return 99 }) != 99 {
-		t.Error("TestUnwrapOrElse case 2 failed")
-	}
+	assert.Equal(t, n.UnwrapOrElse(func() int { return 99 }), 99)
 }
 
 func TestUnwrapOrDefault(t *testing.T) {
 	s := Some(1)
-	if s.UnwrapOrDefault() != 1 {
-		t.Error("TestUnwrapOrDefault case 1 failed")
-	}
+	assert.Equal(t, s.UnwrapOrDefault(), 1)
 
 	n := None[int]()
-	if n.UnwrapOrDefault() != 0 {
-		t.Error("TestUnwrapOrDefault case 2 failed")
+	assert.Equal(t, n.UnwrapOrDefault(), 0)
+}
+
+func TestMap(t *testing.T) {
+	s := Some("Hello, World!")
+	assert.Equal(t, Map(s, func(s string) int { return len(s) }), Some[int](13))
+
+	n := None[string]()
+	assert.Equal(t, Map(n, func(s string) int { return len(s) }), None[int]())
+}
+
+func TestInspect(t *testing.T) {
+	s := Some(1)
+	assert.Equal(t, s.Inspect(func(x int) {}), s)
+
+	n := None[int]()
+	assert.Equal(t, n.Inspect(func(x int) {}), n)
+}
+
+func TestMapOr(t *testing.T) {
+	s := Some("foo")
+	assert.Equal(t, MapOr(s, 42, func(v string) int { return len(v) }), 3)
+
+	n := None[string]()
+	assert.Equal(t, MapOr(n, 42, func(v string) int { return len(v) }), 42)
+}
+
+func TestMapOrElse(t *testing.T) {
+	k := 21
+	s := Some("foo")
+	assert.Equal(t, MapOrElse(s, func() int { return 2 * k }, func(v string) int { return len(v) }), 3)
+
+	n := None[string]()
+	assert.Equal(t, MapOrElse(n, func() int { return 2 * k }, func(v string) int { return len(v) }), 42)
+}
+
+func TestMapOrDefault(t *testing.T) {
+	f := func(s string) int { return len(s)}
+  s := Some("hi")
+
+	assert.Equal(t, MapOrDefault(s, f), 2)
+
+	n := None[string]()
+	assert.Equal(t, MapOrDefault(n, f), 0)
+}
+
+func TestOkOr(t *testing.T) {
+	x := Some("foo")
+	assert.Equal(t, OkOr(x, 0), result.Ok[string, int]("foo"))
+
+	y := None[string]()
+	assert.Equal(t, OkOr(y, 0), result.Err[string, int](0))
+}
+
+func TestOkOrElse(t *testing.T) {
+	x := Some("foo")
+	assert.Equal(t, OkOrElse(x, func() int { return 0 }), result.Ok[string, int]("foo"))
+
+	y := None[string]()
+	assert.Equal(t, OkOrElse(y, func() int { return 0 }), result.Err[string, int](0))
+}
+
+
+func TestAnd(t *testing.T) {
+	x := Some(2)
+	y := None[string]()
+	assert.Equal(t, And(x, y), None[string]())
+
+	x2 := None[int]()
+	y2 := Some("foo")
+	assert.Equal(t, And(x2, y2), None[string]())
+
+	x3 := Some(2)
+	y3 := Some("foo")
+	assert.Equal(t, And(x3, y3), Some("foo"))
+
+	x4 := None[int]()
+	y4 := None[string]()
+	assert.Equal(t, And(x4, y4), None[string]())
+}
+
+func TestAndThen(t *testing.T) {
+	sqThenToString := func(x int) Option[string] {
+		if x > 100 || x < 0 {
+			return None[string]()
+		}
+		return Some(strconv.Itoa(x))
 	}
+
+	assert.Equal(t, AndThen(Some(2), sqThenToString), Some[string]("2"))
+	assert.Equal(t, AndThen(Some(1000), sqThenToString), None[string]())
+	assert.Equal(t, AndThen(None[int](), sqThenToString), None[string]())
+}
+
+func TestFilter(t *testing.T) {
+	isEven := func(n int) bool { return n%2 == 0 }
+
+	assert.Equal(t, None[int]().Filter(isEven), None[int]())
+	assert.Equal(t, Some(3).Filter(isEven), None[int]())
+	assert.Equal(t, Some(4).Filter(isEven), Some(4))
+}
+
+func TestOr(t *testing.T) {
+	x := Some(2)
+	y := None[int]()
+	assert.Equal(t, x.Or(y), Some(2))
+
+	x2 := None[int]()
+	y2 := Some(100)
+	assert.Equal(t, x2.Or(y2), Some(100))
+
+	x3 := Some(2)
+	y3 := Some(100)
+	assert.Equal(t, x3.Or(y3), Some(2))
+
+	x4 := None[int]()
+	y4 := None[int]()
+	assert.Equal(t, x4.Or(y4), None[int]())
+}
+
+func TestOrElse(t *testing.T) {
+	nobody := func() Option[int] { return None[int]() }
+	vikings := func() Option[int] { return Some(42) }
+
+	assert.Equal(t, Some(10).OrElse(vikings), Some(10))
+	assert.Equal(t, None[int]().OrElse(vikings), Some(42))
+	assert.Equal(t, None[int]().OrElse(nobody), None[int]())
+}
+
+func TestXor(t *testing.T) {
+	x := Some(2)
+	y := None[int]()
+	assert.Equal(t, x.Xor(y), Some(2))
+
+	x2 := None[int]()
+	y2 := Some(2)
+	assert.Equal(t, x2.Xor(y2), Some(2))
+
+	x3 := Some(2)
+	y3 := Some(2)
+	assert.Equal(t, x3.Xor(y3), None[int]())
+
+	x4 := None[int]()
+	y4 := None[int]()
+	assert.Equal(t, x4.Xor(y4), None[int]())
+}
+
+func TestInsert(t *testing.T) {
+	var opt Option[int]
+	val := opt.Insert(1)
+	assert.Equal(t, *val, 1)
+	assert.Equal(t, opt.Unwrap(), 1)
+
+	val2 := opt.Insert(2)
+	assert.Equal(t, *val2, 2)
+	*val2 = 3
+	assert.Equal(t, opt.Unwrap(), 3)
+}
+
+func TestGetOrInsert(t *testing.T) {
+	var x Option[int]
+
+	y := x.GetOrInsert(5)
+	assert.Equal(t, *y, 5)
+
+	*y = 7
+	assert.Equal(t, x, Some[int](7))
+}
+
+func TestGetOrInsertDefault(t *testing.T) {
+	var x Option[int]
+
+	y := x.GetOrInsertDefault()
+	assert.Equal(t, *y, 0)
+
+	*y = 7
+	assert.Equal(t, x, Some[int](7))
+}
+
+func TestGetOrInsertWith(t *testing.T) {
+	var x Option[int]
+
+	y := x.GetOrInsertWith(func() int { return 5 })
+	assert.Equal(t, *y, 5)
+
+	*y = 7
+	assert.Equal(t, x, Some[int](7))
+}
+
+func TestTake(t *testing.T) {
+	var x Option[int]
+	x.Some(2)
+	y := x.Take()
+	assert.Equal(t, x, None[int]())
+	assert.Equal(t, y, Some(2))
+
+	var x2 Option[int]
+	x2.None()
+	y2 := x2.Take()
+	assert.Equal(t, x2, None[int]())
+	assert.Equal(t, y2, None[int]())
+}
+
+func TestReplace(t *testing.T) {
+	var x Option[int]
+	x.Some(2)
+	old := x.Replace(5)
+	assert.Equal(t, x, Some(5))
+	assert.Equal(t, old, Some(2))
+
+	var x2 Option[int]
+	x2.None()
+	old2 := x2.Replace(3)
+	assert.Equal(t, x2, Some(3))
+	assert.Equal(t, old2, None[int]())
 }
