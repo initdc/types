@@ -1,16 +1,17 @@
 package option
 
 import (
-	"github.com/initdc/types/result"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
+
+	"github.com/initdc/types/result"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSome(t *testing.T) {
-  var a = Option[int]{
-		value: 1,
-		some: true,
+	var a = Option[int]{
+		value:    1,
+		some:     true,
 		assigned: true,
 	}
 
@@ -18,15 +19,15 @@ func TestSome(t *testing.T) {
 	b.Some(1)
 
 	c := Some[int](1)
-	
+
 	assert.Equal(t, a, b)
 	assert.Equal(t, a, c)
 	assert.Equal(t, b, c)
 }
 
 func TestNone(t *testing.T) {
-  var a = Option[int]{
-		some: false,
+	var a = Option[int]{
+		some:     false,
 		assigned: true,
 	}
 
@@ -34,7 +35,7 @@ func TestNone(t *testing.T) {
 	b.None()
 
 	c := None[int]()
-	
+
 	assert.Equal(t, a, b)
 	assert.Equal(t, a, c)
 	assert.Equal(t, b, c)
@@ -114,12 +115,12 @@ func TestUnwrapOrDefault(t *testing.T) {
 	assert.Equal(t, n.UnwrapOrDefault(), 0)
 }
 
-func TestMap(t *testing.T) {
+func TestOpMap(t *testing.T) {
 	s := Some("Hello, World!")
-	assert.Equal(t, Map(s, func(s string) int { return len(s) }), Some[int](13))
+	assert.Equal(t, OpMap(s, func(s string) int { return len(s) }), Some[int](13))
 
 	n := None[string]()
-	assert.Equal(t, Map(n, func(s string) int { return len(s) }), None[int]())
+	assert.Equal(t, OpMap(n, func(s string) int { return len(s) }), None[int]())
 }
 
 func TestInspect(t *testing.T) {
@@ -130,31 +131,31 @@ func TestInspect(t *testing.T) {
 	assert.Equal(t, n.Inspect(func(x int) {}), n)
 }
 
-func TestMapOr(t *testing.T) {
+func TestOpMapOr(t *testing.T) {
 	s := Some("foo")
-	assert.Equal(t, MapOr(s, 42, func(v string) int { return len(v) }), 3)
+	assert.Equal(t, OpMapOr(s, 42, func(v string) int { return len(v) }), 3)
 
 	n := None[string]()
-	assert.Equal(t, MapOr(n, 42, func(v string) int { return len(v) }), 42)
+	assert.Equal(t, OpMapOr(n, 42, func(v string) int { return len(v) }), 42)
 }
 
-func TestMapOrElse(t *testing.T) {
+func TestOpMapOrElse(t *testing.T) {
 	k := 21
 	s := Some("foo")
-	assert.Equal(t, MapOrElse(s, func() int { return 2 * k }, func(v string) int { return len(v) }), 3)
+	assert.Equal(t, OpMapOrElse(s, func() int { return 2 * k }, func(v string) int { return len(v) }), 3)
 
 	n := None[string]()
-	assert.Equal(t, MapOrElse(n, func() int { return 2 * k }, func(v string) int { return len(v) }), 42)
+	assert.Equal(t, OpMapOrElse(n, func() int { return 2 * k }, func(v string) int { return len(v) }), 42)
 }
 
-func TestMapOrDefault(t *testing.T) {
-	f := func(s string) int { return len(s)}
-  s := Some("hi")
+func TestOpMapOrDefault(t *testing.T) {
+	f := func(s string) int { return len(s) }
+	s := Some("hi")
 
-	assert.Equal(t, MapOrDefault(s, f), 2)
+	assert.Equal(t, OpMapOrDefault(s, f), 2)
 
 	n := None[string]()
-	assert.Equal(t, MapOrDefault(n, f), 0)
+	assert.Equal(t, OpMapOrDefault(n, f), 0)
 }
 
 func TestOkOr(t *testing.T) {
@@ -173,26 +174,25 @@ func TestOkOrElse(t *testing.T) {
 	assert.Equal(t, OkOrElse(y, func() int { return 0 }), result.Err[string, int](0))
 }
 
-
-func TestAnd(t *testing.T) {
+func TestOpAnd(t *testing.T) {
 	x := Some(2)
 	y := None[string]()
-	assert.Equal(t, And(x, y), None[string]())
+	assert.Equal(t, OpAnd(x, y), None[string]())
 
 	x2 := None[int]()
 	y2 := Some("foo")
-	assert.Equal(t, And(x2, y2), None[string]())
+	assert.Equal(t, OpAnd(x2, y2), None[string]())
 
 	x3 := Some(2)
 	y3 := Some("foo")
-	assert.Equal(t, And(x3, y3), Some("foo"))
+	assert.Equal(t, OpAnd(x3, y3), Some("foo"))
 
 	x4 := None[int]()
 	y4 := None[string]()
-	assert.Equal(t, And(x4, y4), None[string]())
+	assert.Equal(t, OpAnd(x4, y4), None[string]())
 }
 
-func TestAndThen(t *testing.T) {
+func TestOpAndThen(t *testing.T) {
 	sqThenToString := func(x int) Option[string] {
 		if x > 100 || x < 0 {
 			return None[string]()
@@ -200,9 +200,9 @@ func TestAndThen(t *testing.T) {
 		return Some(strconv.Itoa(x))
 	}
 
-	assert.Equal(t, AndThen(Some(2), sqThenToString), Some[string]("2"))
-	assert.Equal(t, AndThen(Some(1000), sqThenToString), None[string]())
-	assert.Equal(t, AndThen(None[int](), sqThenToString), None[string]())
+	assert.Equal(t, OpAndThen(Some(2), sqThenToString), Some[string]("2"))
+	assert.Equal(t, OpAndThen(Some(1000), sqThenToString), None[string]())
+	assert.Equal(t, OpAndThen(None[int](), sqThenToString), None[string]())
 }
 
 func TestFilter(t *testing.T) {

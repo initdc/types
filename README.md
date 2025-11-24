@@ -14,7 +14,7 @@ package e2e_test
 import (
 	"fmt"
 	. "github.com/initdc/types/option"
-	types "github.com/initdc/types/result"
+	. "github.com/initdc/types/result"
 	"testing"
 )
 
@@ -29,14 +29,14 @@ func TestE2E(t *testing.T) {
 
 
 	// Result
-	var r1 types.Result[int, string]
+	var r1 Result[int, string]
 	r1.Ok(1)
 
-	var e1 types.Result[int, string]
+	var e1 Result[int, string]
 	e1.Err("error")
 
-	r2 := types.Ok[int, string](1)
-	e2 := types.Err[int, string]("error")
+	r2 := Ok[int, string](1)
+	e2 := Err[int, string]("error")
 
 	fmt.Printf("%#v\n", s1)
 	fmt.Printf("%#v\n", s2)
