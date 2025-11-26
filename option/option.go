@@ -245,6 +245,22 @@ func (o Option[T]) OrElse(f func() Option[T]) Option[T] {
 	return f()
 }
 
+func TryOr[T, U, E any](o Option[T], f func(T) U, e E) result.Result[U, E] {
+	if o.some {
+		return result.Ok[U, E](f(o.value))
+	}
+	return result.Err[U, E](e)
+}
+
+func TryOrElse[T, U, E any](o Option[T], f func(T) U, closure func() result.Result[U, E]) result.Result[U, E] {
+	if o.some {
+		return result.Ok[U, E](f(o.value))
+	}
+	closure()
+	// unreachable
+	return closure()
+}
+
 func (o Option[T]) Xor(optb Option[T]) Option[T] {
 	if o.some && !optb.some {
 		return o

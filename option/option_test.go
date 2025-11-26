@@ -2,10 +2,11 @@ package option
 
 import (
 	"fmt"
-	"github.com/initdc/types/result"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
+
+	"github.com/initdc/types/result"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSome(t *testing.T) {
@@ -265,6 +266,25 @@ func TestOrElse(t *testing.T) {
 	assert.Equal(t, Some(10).OrElse(vikings), Some(10))
 	assert.Equal(t, None[int]().OrElse(vikings), Some(42))
 	assert.Equal(t, None[int]().OrElse(nobody), None[int]())
+}
+
+func TestTryOr(t *testing.T) {
+	f := func(x int) float32 { return float32(x) * 2 }
+	x := Some(2)
+	y := None[int]()
+
+	assert.Equal(t, TryOr(x, f, "bad"), result.Ok[float32, string](4.0))
+	assert.Equal(t, TryOr(y, f, "bad"), result.Err[float32, string]("bad"))
+}
+
+func TestTryOrElse(t *testing.T) {
+	f := func(x int) float32 { return float32(x) * 2 }
+	closure := func() result.Result[float32, string] { return result.Err[float32, string]("bad") }
+	x := Some(2)
+	y := None[int]()
+
+	assert.Equal(t, TryOrElse(x, f, closure), result.Ok[float32, string](4.0))
+	assert.Equal(t, TryOrElse(y, f, closure), result.Err[float32, string]("bad"))
 }
 
 func TestXor(t *testing.T) {
