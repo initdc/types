@@ -19,3 +19,7 @@ end
 task :test_option do
   sh "go test -cover -v ./option"
 end
+
+task :main do
+  sh "go run main.go"
+end

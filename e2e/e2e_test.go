@@ -2,9 +2,10 @@ package e2e_test
 
 import (
 	"fmt"
+	"testing"
+
 	. "github.com/initdc/types/option"
 	. "github.com/initdc/types/result"
-	"testing"
 )
 
 func TestE2E(t *testing.T) {
@@ -15,7 +16,6 @@ func TestE2E(t *testing.T) {
 	s2.None()
 
 	n1 := None[int]()
-
 
 	// Result
 	var r1 Result[int, string]

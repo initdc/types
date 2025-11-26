@@ -3,15 +3,16 @@ package result
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOk(t *testing.T) {
 	var a = Result[int, string]{
-		value: 1,
-		ok: true,
+		value:    1,
+		ok:       true,
 		assigned: true,
 	}
 
@@ -27,8 +28,8 @@ func TestOk(t *testing.T) {
 
 func TestErr(t *testing.T) {
 	var a = Result[int, string]{
-		err: "error",
-		ok: false,
+		err:      "error",
+		ok:       false,
 		assigned: true,
 	}
 
@@ -264,6 +265,17 @@ func TestOrElse(t *testing.T) {
 	assert.Equal(t, OrElse(OrElse(r, err), sq), Ok[int, int](2))
 	assert.Equal(t, OrElse(OrElse(e, sq), err), Ok[int, int](9))
 	assert.Equal(t, OrElse(OrElse(e, err), err), Err[int, int](3))
+}
+
+func TestTry(t *testing.T) {
+	f1 := func(x int) float32 { return float32(x) * 2 }
+	closure := func(e rune) Result[float32, string] { return Err[float32, string](string(e)) }
+
+	r := Ok[int, rune](1)
+	assert.Equal(t, Try(r, f1, closure), Ok[float32, string](2.0))
+
+	e := Err[int, rune]('E')
+	assert.Equal(t, Try(e, f1, closure), Err[float32, string]("E"))
 }
 
 func TestUnwrapOr(t *testing.T) {

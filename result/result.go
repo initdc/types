@@ -46,11 +46,11 @@ func (r *Result[T, E]) Err(e E) {
 }
 
 func (r Result[T, E]) Valid() bool {
-  return r.ok
+	return r.ok
 }
 
 func (r Result[T, E]) Assigned() bool {
-  return r.assigned
+	return r.assigned
 }
 
 func (r Result[T, E]) IsOk() bool {
@@ -187,6 +187,15 @@ func OrElse[T, E, F any](r Result[T, E], op func(E) Result[T, F]) Result[T, F] {
 		return Ok[T, F](r.value)
 	}
 	return op(r.err)
+}
+
+func Try[T, E, U, F any](r Result[T, E], op func(T) U, closure func(E) Result[U, F]) Result[U, F] {
+	if r.ok {
+		return Ok[U, F](op(r.value))
+	}
+	closure(r.err)
+	// unreachable
+	return closure(r.err)
 }
 
 func (r Result[T, E]) UnwrapOr(def T) T {
