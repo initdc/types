@@ -1,6 +1,7 @@
 package option
 
 import (
+	"fmt"
 	"github.com/initdc/types/result"
 	"github.com/stretchr/testify/assert"
 	"strconv"
@@ -8,9 +9,9 @@ import (
 )
 
 func TestSome(t *testing.T) {
-  var a = Option[int]{
-		value: 1,
-		some: true,
+	var a = Option[int]{
+		value:    1,
+		some:     true,
 		assigned: true,
 	}
 
@@ -18,15 +19,15 @@ func TestSome(t *testing.T) {
 	b.Some(1)
 
 	c := Some[int](1)
-	
+
 	assert.Equal(t, a, b)
 	assert.Equal(t, a, c)
 	assert.Equal(t, b, c)
 }
 
 func TestNone(t *testing.T) {
-  var a = Option[int]{
-		some: false,
+	var a = Option[int]{
+		some:     false,
 		assigned: true,
 	}
 
@@ -34,7 +35,7 @@ func TestNone(t *testing.T) {
 	b.None()
 
 	c := None[int]()
-	
+
 	assert.Equal(t, a, b)
 	assert.Equal(t, a, c)
 	assert.Equal(t, b, c)
@@ -115,11 +116,18 @@ func TestUnwrapOrDefault(t *testing.T) {
 }
 
 func TestOptionMap(t *testing.T) {
+	f1 := func(s string) int { return len(s) }
+	f2 := func(x int) int { return x }
+
 	s := Some("Hello, World!")
-	assert.Equal(t, OptionMap(s, func(s string) int { return len(s) }), Some[int](13))
+	assert.Equal(t, OptionMap(s, f1), Some[int](13))
+	assert.Equal(t, To(s, f1).Map(f2), Some[int](13))
+	assert.Equal(t, To(s, f1), Some[int](13))
 
 	n := None[string]()
-	assert.Equal(t, OptionMap(n, func(s string) int { return len(s) }), None[int]())
+	assert.Equal(t, OptionMap(n, f1), None[int]())
+	assert.Equal(t, To(n, f1).Map(f2), None[int]())
+	assert.Equal(t, To(n, f1), None[int]())
 }
 
 func TestInspect(t *testing.T) {
@@ -131,30 +139,44 @@ func TestInspect(t *testing.T) {
 }
 
 func TestOptionMapOr(t *testing.T) {
+	f1 := func(s string) int { return len(s) }
+	f2 := func(x int) int { return x }
+
 	s := Some("foo")
-	assert.Equal(t, OptionMapOr(s, 42, func(v string) int { return len(v) }), 3)
+	assert.Equal(t, OptionMapOr(s, 42, f1), 3)
+	assert.Equal(t, To(s, f1).MapOr(42, f2), 3)
 
 	n := None[string]()
-	assert.Equal(t, OptionMapOr(n, 42, func(v string) int { return len(v) }), 42)
+	assert.Equal(t, OptionMapOr(n, 42, f1), 42)
+	assert.Equal(t, To(n, f1).MapOr(42, f2), 42)
 }
 
 func TestOptionMapOrElse(t *testing.T) {
 	k := 21
+	def := func() int { return 2 * k }
+	f1 := func(s string) int { return len(s) }
+	f2 := func(x int) int { return x }
+
 	s := Some("foo")
-	assert.Equal(t, OptionMapOrElse(s, func() int { return 2 * k }, func(v string) int { return len(v) }), 3)
+	assert.Equal(t, OptionMapOrElse(s, def, f1), 3)
+	assert.Equal(t, To(s, f1).MapOrElse(def, f2), 3)
 
 	n := None[string]()
-	assert.Equal(t, OptionMapOrElse(n, func() int { return 2 * k }, func(v string) int { return len(v) }), 42)
+	assert.Equal(t, OptionMapOrElse(n, def, f1), 42)
+	assert.Equal(t, To(n, f1).MapOrElse(def, f2), 42)
 }
 
 func TestOptionMapOrDefault(t *testing.T) {
-	f := func(s string) int { return len(s)}
-  s := Some("hi")
+	f1 := func(s string) int { return len(s) }
+	f2 := func(x int) int { return x }
 
-	assert.Equal(t, OptionMapOrDefault(s, f), 2)
+	s := Some("hi")
+	assert.Equal(t, OptionMapOrDefault(s, f1), 2)
+	assert.Equal(t, To(s, f1).MapOrDefault(f2), 2)
 
 	n := None[string]()
-	assert.Equal(t, OptionMapOrDefault(n, f), 0)
+	assert.Equal(t, OptionMapOrDefault(n, f1), 0)
+	assert.Equal(t, To(n, f1).MapOrDefault(f2), 0)
 }
 
 func TestOkOr(t *testing.T) {
@@ -173,23 +195,28 @@ func TestOkOrElse(t *testing.T) {
 	assert.Equal(t, OkOrElse(y, func() int { return 0 }), result.Err[string, int](0))
 }
 
-
 func TestOptionAnd(t *testing.T) {
+	f := func(x int) string { return fmt.Sprintf("%d", x) }
+
 	x := Some(2)
 	y := None[string]()
 	assert.Equal(t, OptionAnd(x, y), None[string]())
+	assert.Equal(t, To(x, f).And(y), None[string]())
 
 	x2 := None[int]()
 	y2 := Some("foo")
 	assert.Equal(t, OptionAnd(x2, y2), None[string]())
+	assert.Equal(t, To(x2, f).And(y2), None[string]())
 
 	x3 := Some(2)
 	y3 := Some("foo")
 	assert.Equal(t, OptionAnd(x3, y3), Some("foo"))
+	assert.Equal(t, To(x3, f).And(y3), Some("foo"))
 
 	x4 := None[int]()
 	y4 := None[string]()
 	assert.Equal(t, OptionAnd(x4, y4), None[string]())
+	assert.Equal(t, To(x4, f).And(y4), None[string]())
 }
 
 func TestOptionAndThen(t *testing.T) {

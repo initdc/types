@@ -25,7 +25,6 @@ func None[T any]() Option[T] {
 	}
 }
 
-
 func (o *Option[T]) Some(v T) {
 	if o.assigned {
 		panic("Option already assigned")
@@ -109,6 +108,22 @@ func (o Option[T]) UnwrapOrDefault() T {
 	return zero
 }
 
+type F[U any] func(U) U
+
+func To[T, U any](o Option[T], f func(T) U) Option[U] {
+	if o.some {
+		return Some[U](f(o.value))
+	}
+	return None[U]()
+}
+
+func (o Option[U]) Map(f F[U]) Option[U] {
+	if o.some {
+		return Some[U](f(o.value))
+	}
+	return None[U]()
+}
+
 func OptionMap[T, U any](o Option[T], f func(T) U) Option[U] {
 	if o.some {
 		return Some[U](f(o.value))
@@ -123,6 +138,13 @@ func (o Option[T]) Inspect(f func(T)) Option[T] {
 	return o
 }
 
+func (o Option[U]) MapOr(def U, f F[U]) U {
+	if o.some {
+		return f(o.value)
+	}
+	return def
+}
+
 func OptionMapOr[T, U any](o Option[T], def U, f func(T) U) U {
 	if o.some {
 		return f(o.value)
@@ -130,11 +152,26 @@ func OptionMapOr[T, U any](o Option[T], def U, f func(T) U) U {
 	return def
 }
 
+func (o Option[U]) MapOrElse(def func() U, f F[U]) U {
+	if o.some {
+		return f(o.value)
+	}
+	return def()
+}
+
 func OptionMapOrElse[T, U any](o Option[T], def func() U, f func(T) U) U {
 	if o.some {
 		return f(o.value)
 	}
 	return def()
+}
+
+func (o Option[U]) MapOrDefault(f F[U]) U {
+	if o.some {
+		return f(o.value)
+	}
+	var zero U
+	return zero
 }
 
 func OptionMapOrDefault[T, U any](o Option[T], f func(T) U) U {
@@ -159,9 +196,23 @@ func OkOrElse[T, E any](o Option[T], err func() E) result.Result[T, E] {
 	return result.Err[T, E](err())
 }
 
+func (o Option[U]) And(optb Option[U]) Option[U] {
+	if o.some {
+		return optb
+	}
+	return None[U]()
+}
+
 func OptionAnd[T, U any](o Option[T], optb Option[U]) Option[U] {
 	if o.some {
 		return optb
+	}
+	return None[U]()
+}
+
+func (o Option[U]) AndThen(optb Option[U], f func(U) Option[U]) Option[U] {
+	if o.some {
+		return f(o.value)
 	}
 	return None[U]()
 }
