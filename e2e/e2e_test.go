@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"runtime"
 	"testing"
 
 	. "github.com/initdc/types/option"
@@ -20,12 +21,16 @@ func TestE2E(t *testing.T) {
 	// Result
 	var r1 Result[int, string]
 	r1.Ok(1)
+	r1.Unwrap()
 
 	var e1 Result[int, string]
 	e1.Err("error")
+	e1.UnwrapErr()
 
 	r2 := Ok[int, string](1)
+	// r2.Unwrap()
 	e2 := Err[int, string]("error")
+	// e2.UnwrapErr()
 
 	fmt.Printf("%#v\n", s1)
 	fmt.Printf("%#v\n", s2)
@@ -35,4 +40,6 @@ func TestE2E(t *testing.T) {
 	fmt.Printf("%#v\n", e1)
 	fmt.Printf("%#v\n", r2)
 	fmt.Printf("%#v\n", e2)
+
+	runtime.GC()
 }

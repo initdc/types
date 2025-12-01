@@ -2,6 +2,7 @@ package result
 
 import (
 	"fmt"
+	"runtime"
 )
 
 type Result[T, E any] struct {
@@ -9,22 +10,54 @@ type Result[T, E any] struct {
 	err      E
 	ok       bool
 	assigned bool
+	consumed bool
+}
+
+type FinalizerResult[T, E any] struct {
+	r    *Result[T, E]
+	file string
+	line int
+}
+
+func NewFinalizerResult[T, E any](r *Result[T, E], file string, line int) *FinalizerResult[T, E] {
+	return &FinalizerResult[T, E]{
+		r:    r,
+		file: file,
+		line: line,
+	}
+}
+
+func (fr *FinalizerResult[T, E]) finalizer() {
+	r := fr.r
+	if !r.consumed {
+		fmt.Printf("warning: unused variable: %s\n        %s:%d\n", r, fr.file, fr.line)
+	}
 }
 
 func Ok[T, E any](v T) *Result[T, E] {
-	return &Result[T, E]{
+	r := &Result[T, E]{
 		value:    v,
 		ok:       true,
 		assigned: true,
+		consumed: false,
 	}
+
+	_, file, line, _ := runtime.Caller(1)
+	runtime.SetFinalizer(NewFinalizerResult(r, file, line), (*FinalizerResult[T, E]).finalizer)
+	return r
 }
 
 func Err[T, E any](e E) *Result[T, E] {
-	return &Result[T, E]{
+	r := &Result[T, E]{
 		err:      e,
 		ok:       false,
 		assigned: true,
+		consumed: false,
 	}
+
+	_, file, line, _ := runtime.Caller(1)
+	runtime.SetFinalizer(NewFinalizerResult(r, file, line), (*FinalizerResult[T, E]).finalizer)
+	return r
 }
 
 func (r *Result[T, E]) Ok(v T) {
@@ -34,6 +67,10 @@ func (r *Result[T, E]) Ok(v T) {
 	r.value = v
 	r.ok = true
 	r.assigned = true
+	r.consumed = false
+
+	_, file, line, _ := runtime.Caller(1)
+	runtime.SetFinalizer(NewFinalizerResult(r, file, line), (*FinalizerResult[T, E]).finalizer)
 }
 
 func (r *Result[T, E]) Err(e E) {
@@ -43,6 +80,19 @@ func (r *Result[T, E]) Err(e E) {
 	r.err = e
 	r.ok = false
 	r.assigned = true
+	r.consumed = false
+
+	_, file, line, _ := runtime.Caller(1)
+	runtime.SetFinalizer(NewFinalizerResult(r, file, line), (*FinalizerResult[T, E]).finalizer)
+}
+
+func (r *Result[T, E]) String() string {
+	r.consumed = true
+
+	if r.ok {
+		return fmt.Sprintf("Ok(%#v)", r.value)
+	}
+	return fmt.Sprintf("Err(%#v)", r.err)
 }
 
 func (r Result[T, E]) Valid() bool {
@@ -58,6 +108,8 @@ func (r Result[T, E]) IsOk() bool {
 }
 
 func (r *Result[T, E]) IsOkAnd(f func(T) bool) bool {
+	r.consumed = true
+
 	if !r.ok {
 		return false
 	}
@@ -69,6 +121,8 @@ func (r Result[T, E]) IsErr() bool {
 }
 
 func (r *Result[T, E]) IsErrAnd(f func(E) bool) bool {
+	r.consumed = true
+
 	if r.ok {
 		return false
 	}
@@ -76,6 +130,8 @@ func (r *Result[T, E]) IsErrAnd(f func(E) bool) bool {
 }
 
 func Map[T, E, U any](r *Result[T, E], f func(T) U) *Result[U, E] {
+	r.consumed = true
+
 	if r.ok {
 		return Ok[U, E](f(r.value))
 	}
@@ -83,6 +139,8 @@ func Map[T, E, U any](r *Result[T, E], f func(T) U) *Result[U, E] {
 }
 
 func MapOr[T, E, U any](r *Result[T, E], def U, f func(T) U) U {
+	r.consumed = true
+
 	if r.ok {
 		return f(r.value)
 	}
@@ -90,6 +148,8 @@ func MapOr[T, E, U any](r *Result[T, E], def U, f func(T) U) U {
 }
 
 func MapOrElse[T, E, U any](r *Result[T, E], def func(E) U, f func(T) U) U {
+	r.consumed = true
+
 	if r.ok {
 		return f(r.value)
 	}
@@ -97,6 +157,8 @@ func MapOrElse[T, E, U any](r *Result[T, E], def func(E) U, f func(T) U) U {
 }
 
 func MapOrDefault[T, E, U any](r *Result[T, E], f func(T) U) U {
+	r.consumed = true
+
 	if r.ok {
 		return f(r.value)
 	}
@@ -105,6 +167,8 @@ func MapOrDefault[T, E, U any](r *Result[T, E], f func(T) U) U {
 }
 
 func MapErr[T, E, F any](r *Result[T, E], f func(E) F) *Result[T, F] {
+	r.consumed = true
+
 	if r.ok {
 		return Ok[T, F](r.value)
 	}
@@ -126,6 +190,8 @@ func (r *Result[T, E]) InspectErr(f func(E)) *Result[T, E] {
 }
 
 func (r *Result[T, E]) Expect(msg string) T {
+	r.consumed = true
+
 	if r.ok {
 		return r.value
 	}
@@ -133,6 +199,8 @@ func (r *Result[T, E]) Expect(msg string) T {
 }
 
 func (r *Result[T, E]) Unwrap() T {
+	r.consumed = true
+
 	if r.ok {
 		return r.value
 	}
@@ -140,6 +208,8 @@ func (r *Result[T, E]) Unwrap() T {
 }
 
 func (r *Result[T, E]) UnwrapOrDefault() T {
+	r.consumed = true
+
 	if r.ok {
 		return r.value
 	}
@@ -148,6 +218,8 @@ func (r *Result[T, E]) UnwrapOrDefault() T {
 }
 
 func (r *Result[T, E]) ExpectErr(msg string) E {
+	r.consumed = true
+
 	if r.ok {
 		panic(fmt.Sprintf("%s: %v", msg, r.value))
 	}
@@ -155,6 +227,8 @@ func (r *Result[T, E]) ExpectErr(msg string) E {
 }
 
 func (r *Result[T, E]) UnwrapErr() E {
+	r.consumed = true
+
 	if r.ok {
 		panic(fmt.Sprintf("called Result.UnwrapErr() on an Ok value: %v", r.value))
 	}
@@ -162,6 +236,8 @@ func (r *Result[T, E]) UnwrapErr() E {
 }
 
 func And[T, E, U any](r *Result[T, E], res *Result[U, E]) *Result[U, E] {
+	r.consumed = true
+
 	if r.ok {
 		return res
 	}
@@ -169,6 +245,8 @@ func And[T, E, U any](r *Result[T, E], res *Result[U, E]) *Result[U, E] {
 }
 
 func AndThen[T, E, U any](r *Result[T, E], op func(T) *Result[U, E]) *Result[U, E] {
+	r.consumed = true
+
 	if r.ok {
 		return op(r.value)
 	}
@@ -176,6 +254,8 @@ func AndThen[T, E, U any](r *Result[T, E], op func(T) *Result[U, E]) *Result[U, 
 }
 
 func Or[T, E, F any](r *Result[T, E], res *Result[T, F]) *Result[T, F] {
+	r.consumed = true
+
 	if r.ok {
 		return Ok[T, F](r.value)
 	}
@@ -183,6 +263,8 @@ func Or[T, E, F any](r *Result[T, E], res *Result[T, F]) *Result[T, F] {
 }
 
 func OrElse[T, E, F any](r *Result[T, E], op func(E) *Result[T, F]) *Result[T, F] {
+	r.consumed = true
+
 	if r.ok {
 		return Ok[T, F](r.value)
 	}
@@ -190,6 +272,8 @@ func OrElse[T, E, F any](r *Result[T, E], op func(E) *Result[T, F]) *Result[T, F
 }
 
 func Try[T, E, U, F any](r *Result[T, E], op func(T) U, closure func(E) *Result[U, F]) *Result[U, F] {
+	r.consumed = true
+
 	if r.ok {
 		return Ok[U, F](op(r.value))
 	}
@@ -200,6 +284,8 @@ func Try[T, E, U, F any](r *Result[T, E], op func(T) U, closure func(E) *Result[
 }
 
 func (r *Result[T, E]) UnwrapOr(def T) T {
+	r.consumed = true
+
 	if r.ok {
 		return r.value
 	}
@@ -207,6 +293,8 @@ func (r *Result[T, E]) UnwrapOr(def T) T {
 }
 
 func (r *Result[T, E]) UnwrapOrElse(f func(E) T) T {
+	r.consumed = true
+
 	if r.ok {
 		return r.value
 	}
