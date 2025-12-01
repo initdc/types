@@ -1,6 +1,8 @@
 package option
 
 import (
+	"fmt"
+
 	"github.com/initdc/types/result"
 )
 
@@ -10,16 +12,16 @@ type Option[T any] struct {
 	assigned bool
 }
 
-func Some[T any](v T) Option[T] {
-	return Option[T]{
+func Some[T any](v T) *Option[T] {
+	return &Option[T]{
 		value:    v,
 		some:     true,
 		assigned: true,
 	}
 }
 
-func None[T any]() Option[T] {
-	return Option[T]{
+func None[T any]() *Option[T] {
+	return &Option[T]{
 		some:     false,
 		assigned: true,
 	}
@@ -54,7 +56,7 @@ func (o Option[T]) IsSome() bool {
 	return o.some
 }
 
-func (o Option[T]) IsSomeAnd(f func(T) bool) bool {
+func (o *Option[T]) IsSomeAnd(f func(T) bool) bool {
 	if !o.some {
 		return false
 	}
@@ -65,42 +67,42 @@ func (o Option[T]) IsNone() bool {
 	return !o.some
 }
 
-func (o Option[T]) IsNoneOr(f func(T) bool) bool {
+func (o *Option[T]) IsNoneOr(f func(T) bool) bool {
 	if !o.some {
 		return true
 	}
 	return f(o.value)
 }
 
-func (o Option[T]) Expect(msg string) T {
+func (o *Option[T]) Expect(msg string) T {
 	if o.some {
 		return o.value
 	}
 	panic(msg)
 }
 
-func (o Option[T]) Unwrap() T {
+func (o *Option[T]) Unwrap() T {
 	if o.some {
 		return o.value
 	}
 	panic("called Option.Unwrap() on a None value")
 }
 
-func (o Option[T]) UnwrapOr(def T) T {
+func (o *Option[T]) UnwrapOr(def T) T {
 	if o.some {
 		return o.value
 	}
 	return def
 }
 
-func (o Option[T]) UnwrapOrElse(f func() T) T {
+func (o *Option[T]) UnwrapOrElse(f func() T) T {
 	if o.some {
 		return o.value
 	}
 	return f()
 }
 
-func (o Option[T]) UnwrapOrDefault() T {
+func (o *Option[T]) UnwrapOrDefault() T {
 	if o.some {
 		return o.value
 	}
@@ -110,63 +112,63 @@ func (o Option[T]) UnwrapOrDefault() T {
 
 type F[U any] func(U) U
 
-func To[T, U any](o Option[T], f func(T) U) Option[U] {
+func To[T, U any](o *Option[T], f func(T) U) *Option[U] {
 	if o.some {
 		return Some[U](f(o.value))
 	}
 	return None[U]()
 }
 
-func (o Option[U]) Map(f F[U]) Option[U] {
+func (o *Option[U]) Map(f F[U]) *Option[U] {
 	if o.some {
 		return Some[U](f(o.value))
 	}
 	return None[U]()
 }
 
-func OptionMap[T, U any](o Option[T], f func(T) U) Option[U] {
+func OptionMap[T, U any](o *Option[T], f func(T) U) *Option[U] {
 	if o.some {
 		return Some[U](f(o.value))
 	}
 	return None[U]()
 }
 
-func (o Option[T]) Inspect(f func(T)) Option[T] {
+func (o *Option[T]) Inspect(f func(T)) *Option[T] {
 	if o.some {
 		f(o.value)
 	}
 	return o
 }
 
-func (o Option[U]) MapOr(def U, f F[U]) U {
+func (o *Option[U]) MapOr(def U, f F[U]) U {
 	if o.some {
 		return f(o.value)
 	}
 	return def
 }
 
-func OptionMapOr[T, U any](o Option[T], def U, f func(T) U) U {
+func OptionMapOr[T, U any](o *Option[T], def U, f func(T) U) U {
 	if o.some {
 		return f(o.value)
 	}
 	return def
 }
 
-func (o Option[U]) MapOrElse(def func() U, f F[U]) U {
+func (o *Option[U]) MapOrElse(def func() U, f F[U]) U {
 	if o.some {
 		return f(o.value)
 	}
 	return def()
 }
 
-func OptionMapOrElse[T, U any](o Option[T], def func() U, f func(T) U) U {
+func OptionMapOrElse[T, U any](o *Option[T], def func() U, f func(T) U) U {
 	if o.some {
 		return f(o.value)
 	}
 	return def()
 }
 
-func (o Option[U]) MapOrDefault(f F[U]) U {
+func (o *Option[U]) MapOrDefault(f F[U]) U {
 	if o.some {
 		return f(o.value)
 	}
@@ -174,7 +176,7 @@ func (o Option[U]) MapOrDefault(f F[U]) U {
 	return zero
 }
 
-func OptionMapOrDefault[T, U any](o Option[T], f func(T) U) U {
+func OptionMapOrDefault[T, U any](o *Option[T], f func(T) U) U {
 	if o.some {
 		return f(o.value)
 	}
@@ -182,86 +184,87 @@ func OptionMapOrDefault[T, U any](o Option[T], f func(T) U) U {
 	return zero
 }
 
-func OkOr[T, E any](o Option[T], err E) result.Result[T, E] {
+func OkOr[T, E any](o *Option[T], err E) *result.Result[T, E] {
 	if o.some {
 		return result.Ok[T, E](o.value)
 	}
 	return result.Err[T, E](err)
 }
 
-func OkOrElse[T, E any](o Option[T], err func() E) result.Result[T, E] {
+func OkOrElse[T, E any](o *Option[T], err func() E) *result.Result[T, E] {
 	if o.some {
 		return result.Ok[T, E](o.value)
 	}
 	return result.Err[T, E](err())
 }
 
-func (o Option[U]) And(optb Option[U]) Option[U] {
+func (o *Option[U]) And(optb *Option[U]) *Option[U] {
 	if o.some {
 		return optb
 	}
 	return None[U]()
 }
 
-func OptionAnd[T, U any](o Option[T], optb Option[U]) Option[U] {
+func OptionAnd[T, U any](o *Option[T], optb *Option[U]) *Option[U] {
 	if o.some {
 		return optb
 	}
 	return None[U]()
 }
 
-func (o Option[U]) AndThen(optb Option[U], f func(U) Option[U]) Option[U] {
+func (o *Option[U]) AndThen(optb *Option[U], f func(U) *Option[U]) *Option[U] {
 	if o.some {
 		return f(o.value)
 	}
 	return None[U]()
 }
 
-func OptionAndThen[T, U any](o Option[T], f func(T) Option[U]) Option[U] {
+func OptionAndThen[T, U any](o *Option[T], f func(T) *Option[U]) *Option[U] {
 	if o.some {
 		return f(o.value)
 	}
 	return None[U]()
 }
 
-func (o Option[T]) Filter(predicate func(T) bool) Option[T] {
+func (o *Option[T]) Filter(predicate func(T) bool) *Option[T] {
 	if o.some && predicate(o.value) {
 		return Some[T](o.value)
 	}
 	return None[T]()
 }
 
-func (o Option[T]) Or(optb Option[T]) Option[T] {
+func (o *Option[T]) Or(optb *Option[T]) *Option[T] {
 	if o.some {
 		return o
 	}
 	return optb
 }
 
-func (o Option[T]) OrElse(f func() Option[T]) Option[T] {
+func (o *Option[T]) OrElse(f func() *Option[T]) *Option[T] {
 	if o.some {
 		return o
 	}
 	return f()
 }
 
-func TryOr[T, U, E any](o Option[T], f func(T) U, e E) result.Result[U, E] {
+func TryOr[T, U, E any](o *Option[T], f func(T) U, e E) *result.Result[U, E] {
 	if o.some {
 		return result.Ok[U, E](f(o.value))
 	}
 	return result.Err[U, E](e)
 }
 
-func TryOrElse[T, U, E any](o Option[T], f func(T) U, closure func() result.Result[U, E]) result.Result[U, E] {
+func TryOrElse[T, U, E any](o *Option[T], f func(T) U, closure func() *result.Result[U, E]) *result.Result[U, E] {
 	if o.some {
 		return result.Ok[U, E](f(o.value))
 	}
 	closure()
 	// unreachable
+	fmt.Println("Option unreachable")
 	return closure()
 }
 
-func (o Option[T]) Xor(optb Option[T]) Option[T] {
+func (o *Option[T]) Xor(optb *Option[T]) *Option[T] {
 	if o.some && !optb.some {
 		return o
 	}
@@ -306,14 +309,14 @@ func (o *Option[T]) GetOrInsertWith(f func() T) *T {
 	return &o.value
 }
 
-func (o *Option[T]) Take() Option[T] {
+func (o *Option[T]) Take() *Option[T] {
 	var cp = *o
-	*o = None[T]()
-	return cp
+	*o = *(None[T]())
+	return &cp
 }
 
-func (o *Option[T]) Replace(value T) Option[T] {
+func (o *Option[T]) Replace(value T) *Option[T] {
 	var cp = *o
-	*o = Some[T](value)
-	return cp
+	*o = *(Some[T](value))
+	return &cp
 }

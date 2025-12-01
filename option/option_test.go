@@ -22,8 +22,8 @@ func TestSome(t *testing.T) {
 	c := Some[int](1)
 
 	assert.Equal(t, a, b)
-	assert.Equal(t, a, c)
-	assert.Equal(t, b, c)
+	assert.Equal(t, a, *c)
+	assert.Equal(t, b, *c)
 }
 
 func TestNone(t *testing.T) {
@@ -38,8 +38,8 @@ func TestNone(t *testing.T) {
 	c := None[int]()
 
 	assert.Equal(t, a, b)
-	assert.Equal(t, a, c)
-	assert.Equal(t, b, c)
+	assert.Equal(t, a, *c)
+	assert.Equal(t, b, *c)
 }
 
 func TestIsSome(t *testing.T) {
@@ -221,7 +221,7 @@ func TestOptionAnd(t *testing.T) {
 }
 
 func TestOptionAndThen(t *testing.T) {
-	sqThenToString := func(x int) Option[string] {
+	sqThenToString := func(x int) *Option[string] {
 		if x > 100 || x < 0 {
 			return None[string]()
 		}
@@ -260,8 +260,8 @@ func TestOr(t *testing.T) {
 }
 
 func TestOrElse(t *testing.T) {
-	nobody := func() Option[int] { return None[int]() }
-	vikings := func() Option[int] { return Some(42) }
+	nobody := func() *Option[int] { return None[int]() }
+	vikings := func() *Option[int] { return Some(42) }
 
 	assert.Equal(t, Some(10).OrElse(vikings), Some(10))
 	assert.Equal(t, None[int]().OrElse(vikings), Some(42))
@@ -279,7 +279,7 @@ func TestTryOr(t *testing.T) {
 
 func TestTryOrElse(t *testing.T) {
 	f := func(x int) float32 { return float32(x) * 2 }
-	closure := func() result.Result[float32, string] { return result.Err[float32, string]("bad") }
+	closure := func() *result.Result[float32, string] { return result.Err[float32, string]("bad") }
 	x := Some(2)
 	y := None[int]()
 
@@ -324,7 +324,7 @@ func TestGetOrInsert(t *testing.T) {
 	assert.Equal(t, *y, 5)
 
 	*y = 7
-	assert.Equal(t, x, Some[int](7))
+	assert.Equal(t, &x, Some[int](7))
 }
 
 func TestGetOrInsertDefault(t *testing.T) {
@@ -334,7 +334,7 @@ func TestGetOrInsertDefault(t *testing.T) {
 	assert.Equal(t, *y, 0)
 
 	*y = 7
-	assert.Equal(t, x, Some[int](7))
+	assert.Equal(t, &x, Some[int](7))
 }
 
 func TestGetOrInsertWith(t *testing.T) {
@@ -344,20 +344,20 @@ func TestGetOrInsertWith(t *testing.T) {
 	assert.Equal(t, *y, 5)
 
 	*y = 7
-	assert.Equal(t, x, Some[int](7))
+	assert.Equal(t, &x, Some[int](7))
 }
 
 func TestTake(t *testing.T) {
 	var x Option[int]
 	x.Some(2)
 	y := x.Take()
-	assert.Equal(t, x, None[int]())
+	assert.Equal(t, &x, None[int]())
 	assert.Equal(t, y, Some(2))
 
 	var x2 Option[int]
 	x2.None()
 	y2 := x2.Take()
-	assert.Equal(t, x2, None[int]())
+	assert.Equal(t, &x2, None[int]())
 	assert.Equal(t, y2, None[int]())
 }
 
@@ -365,12 +365,12 @@ func TestReplace(t *testing.T) {
 	var x Option[int]
 	x.Some(2)
 	old := x.Replace(5)
-	assert.Equal(t, x, Some(5))
+	assert.Equal(t, &x, Some(5))
 	assert.Equal(t, old, Some(2))
 
 	var x2 Option[int]
 	x2.None()
 	old2 := x2.Replace(3)
-	assert.Equal(t, x2, Some(3))
+	assert.Equal(t, &x2, Some(3))
 	assert.Equal(t, old2, None[int]())
 }
