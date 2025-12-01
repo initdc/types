@@ -7,14 +7,14 @@ import (
 	. "github.com/initdc/types/result"
 )
 
-func Div(a, b int) Result[int, rune] {
+func Div(a, b int) *Result[int, rune] {
 	if b == 0 {
 		return Err[int]('E')
 	}
 	return Ok[int, rune](a / b)
 }
 
-func closure(r rune) Result[float32, string] {
+func closure(r rune) *Result[float32, string] {
 	goto clean
 
 clean:
