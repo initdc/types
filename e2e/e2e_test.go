@@ -34,7 +34,8 @@ func TestE2E(t *testing.T) {
 
 	fmt.Printf("%#v\n", s1)
 	fmt.Printf("%#v\n", s2)
-	fmt.Printf("%#v\n", n1)
+	// n1 used by calling String()
+	fmt.Printf("%v\n", n1)
 
 	fmt.Printf("%#v\n", r1)
 	fmt.Printf("%#v\n", e1)

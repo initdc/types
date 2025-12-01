@@ -244,7 +244,10 @@ func TestFilter(t *testing.T) {
 func TestOr(t *testing.T) {
 	x := Some(2)
 	y := None[int]()
-	assert.Equal(t, x.Or(y), Some(2))
+
+	z := Some(2)
+	z.Unwrap()
+	assert.Equal(t, x.Or(y), z)
 
 	x2 := None[int]()
 	y2 := Some(100)
@@ -252,7 +255,8 @@ func TestOr(t *testing.T) {
 
 	x3 := Some(2)
 	y3 := Some(100)
-	assert.Equal(t, x3.Or(y3), Some(2))
+
+	assert.Equal(t, x3.Or(y3), z)
 
 	x4 := None[int]()
 	y4 := None[int]()
@@ -263,7 +267,10 @@ func TestOrElse(t *testing.T) {
 	nobody := func() *Option[int] { return None[int]() }
 	vikings := func() *Option[int] { return Some(42) }
 
-	assert.Equal(t, Some(10).OrElse(vikings), Some(10))
+	z := Some(10)
+	z.Unwrap()
+
+	assert.Equal(t, Some(10).OrElse(vikings), z)
 	assert.Equal(t, None[int]().OrElse(vikings), Some(42))
 	assert.Equal(t, None[int]().OrElse(nobody), None[int]())
 }
@@ -290,7 +297,10 @@ func TestTryOrElse(t *testing.T) {
 func TestXor(t *testing.T) {
 	x := Some(2)
 	y := None[int]()
-	assert.Equal(t, x.Xor(y), Some(2))
+
+	z := Some(2)
+	z.Unwrap()
+	assert.Equal(t, x.Xor(y), z)
 
 	x2 := None[int]()
 	y2 := Some(2)

@@ -2,6 +2,7 @@ package option
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/initdc/types/result"
 )
@@ -10,21 +11,53 @@ type Option[T any] struct {
 	value    T
 	some     bool
 	assigned bool
+	consumed bool
+}
+
+type FinalizerOption[T any] struct {
+	o    *Option[T]
+	file string
+	line int
+}
+
+func NewFinalizerOption[T any](o *Option[T], file string, line int) *FinalizerOption[T] {
+	return &FinalizerOption[T]{
+		o:    o,
+		file: file,
+		line: line,
+	}
+}
+
+func (fo *FinalizerOption[T]) finalizer() {
+	o := fo.o
+	if !o.consumed {
+		fmt.Printf("warning: unused variable: %s\n        %s:%d\n", o, fo.file, fo.line)
+	}
 }
 
 func Some[T any](v T) *Option[T] {
-	return &Option[T]{
+	o := &Option[T]{
 		value:    v,
 		some:     true,
 		assigned: true,
+		consumed: false,
 	}
+
+	_, file, line, _ := runtime.Caller(1)
+	runtime.SetFinalizer(NewFinalizerOption(o, file, line), (*FinalizerOption[T]).finalizer)
+	return o
 }
 
 func None[T any]() *Option[T] {
-	return &Option[T]{
+	o := &Option[T]{
 		some:     false,
 		assigned: true,
+		consumed: false,
 	}
+
+	_, file, line, _ := runtime.Caller(1)
+	runtime.SetFinalizer(NewFinalizerOption(o, file, line), (*FinalizerOption[T]).finalizer)
+	return o
 }
 
 func (o *Option[T]) Some(v T) {
@@ -34,6 +67,10 @@ func (o *Option[T]) Some(v T) {
 	o.value = v
 	o.some = true
 	o.assigned = true
+	o.consumed = false
+
+	_, file, line, _ := runtime.Caller(1)
+	runtime.SetFinalizer(NewFinalizerOption(o, file, line), (*FinalizerOption[T]).finalizer)
 }
 
 func (o *Option[T]) None() {
@@ -42,6 +79,19 @@ func (o *Option[T]) None() {
 	}
 	o.some = false
 	o.assigned = true
+	o.consumed = false
+
+	_, file, line, _ := runtime.Caller(1)
+	runtime.SetFinalizer(NewFinalizerOption(o, file, line), (*FinalizerOption[T]).finalizer)
+}
+
+func (o *Option[T]) String() string {
+	o.consumed = true
+
+	if o.some {
+		return fmt.Sprintf("Some(%#v)", o.value)
+	}
+	return "None()"
 }
 
 func (o Option[T]) Valid() bool {
@@ -57,6 +107,8 @@ func (o Option[T]) IsSome() bool {
 }
 
 func (o *Option[T]) IsSomeAnd(f func(T) bool) bool {
+	o.consumed = true
+
 	if !o.some {
 		return false
 	}
@@ -68,6 +120,8 @@ func (o Option[T]) IsNone() bool {
 }
 
 func (o *Option[T]) IsNoneOr(f func(T) bool) bool {
+	o.consumed = true
+
 	if !o.some {
 		return true
 	}
@@ -75,6 +129,8 @@ func (o *Option[T]) IsNoneOr(f func(T) bool) bool {
 }
 
 func (o *Option[T]) Expect(msg string) T {
+	o.consumed = true
+
 	if o.some {
 		return o.value
 	}
@@ -82,6 +138,8 @@ func (o *Option[T]) Expect(msg string) T {
 }
 
 func (o *Option[T]) Unwrap() T {
+	o.consumed = true
+
 	if o.some {
 		return o.value
 	}
@@ -89,6 +147,8 @@ func (o *Option[T]) Unwrap() T {
 }
 
 func (o *Option[T]) UnwrapOr(def T) T {
+	o.consumed = true
+
 	if o.some {
 		return o.value
 	}
@@ -96,6 +156,8 @@ func (o *Option[T]) UnwrapOr(def T) T {
 }
 
 func (o *Option[T]) UnwrapOrElse(f func() T) T {
+	o.consumed = true
+
 	if o.some {
 		return o.value
 	}
@@ -103,6 +165,8 @@ func (o *Option[T]) UnwrapOrElse(f func() T) T {
 }
 
 func (o *Option[T]) UnwrapOrDefault() T {
+	o.consumed = true
+
 	if o.some {
 		return o.value
 	}
@@ -113,6 +177,8 @@ func (o *Option[T]) UnwrapOrDefault() T {
 type F[U any] func(U) U
 
 func To[T, U any](o *Option[T], f func(T) U) *Option[U] {
+	o.consumed = true
+
 	if o.some {
 		return Some[U](f(o.value))
 	}
@@ -120,6 +186,8 @@ func To[T, U any](o *Option[T], f func(T) U) *Option[U] {
 }
 
 func (o *Option[U]) Map(f F[U]) *Option[U] {
+	o.consumed = true
+
 	if o.some {
 		return Some[U](f(o.value))
 	}
@@ -127,6 +195,8 @@ func (o *Option[U]) Map(f F[U]) *Option[U] {
 }
 
 func OptionMap[T, U any](o *Option[T], f func(T) U) *Option[U] {
+	o.consumed = true
+
 	if o.some {
 		return Some[U](f(o.value))
 	}
@@ -141,6 +211,8 @@ func (o *Option[T]) Inspect(f func(T)) *Option[T] {
 }
 
 func (o *Option[U]) MapOr(def U, f F[U]) U {
+	o.consumed = true
+
 	if o.some {
 		return f(o.value)
 	}
@@ -148,6 +220,8 @@ func (o *Option[U]) MapOr(def U, f F[U]) U {
 }
 
 func OptionMapOr[T, U any](o *Option[T], def U, f func(T) U) U {
+	o.consumed = true
+
 	if o.some {
 		return f(o.value)
 	}
@@ -155,6 +229,8 @@ func OptionMapOr[T, U any](o *Option[T], def U, f func(T) U) U {
 }
 
 func (o *Option[U]) MapOrElse(def func() U, f F[U]) U {
+	o.consumed = true
+
 	if o.some {
 		return f(o.value)
 	}
@@ -162,6 +238,8 @@ func (o *Option[U]) MapOrElse(def func() U, f F[U]) U {
 }
 
 func OptionMapOrElse[T, U any](o *Option[T], def func() U, f func(T) U) U {
+	o.consumed = true
+
 	if o.some {
 		return f(o.value)
 	}
@@ -169,6 +247,8 @@ func OptionMapOrElse[T, U any](o *Option[T], def func() U, f func(T) U) U {
 }
 
 func (o *Option[U]) MapOrDefault(f F[U]) U {
+	o.consumed = true
+
 	if o.some {
 		return f(o.value)
 	}
@@ -177,6 +257,8 @@ func (o *Option[U]) MapOrDefault(f F[U]) U {
 }
 
 func OptionMapOrDefault[T, U any](o *Option[T], f func(T) U) U {
+	o.consumed = true
+
 	if o.some {
 		return f(o.value)
 	}
@@ -185,6 +267,8 @@ func OptionMapOrDefault[T, U any](o *Option[T], f func(T) U) U {
 }
 
 func OkOr[T, E any](o *Option[T], err E) *result.Result[T, E] {
+	o.consumed = true
+
 	if o.some {
 		return result.Ok[T, E](o.value)
 	}
@@ -192,6 +276,8 @@ func OkOr[T, E any](o *Option[T], err E) *result.Result[T, E] {
 }
 
 func OkOrElse[T, E any](o *Option[T], err func() E) *result.Result[T, E] {
+	o.consumed = true
+
 	if o.some {
 		return result.Ok[T, E](o.value)
 	}
@@ -199,6 +285,8 @@ func OkOrElse[T, E any](o *Option[T], err func() E) *result.Result[T, E] {
 }
 
 func (o *Option[U]) And(optb *Option[U]) *Option[U] {
+	o.consumed = true
+
 	if o.some {
 		return optb
 	}
@@ -206,6 +294,8 @@ func (o *Option[U]) And(optb *Option[U]) *Option[U] {
 }
 
 func OptionAnd[T, U any](o *Option[T], optb *Option[U]) *Option[U] {
+	o.consumed = true
+
 	if o.some {
 		return optb
 	}
@@ -213,6 +303,8 @@ func OptionAnd[T, U any](o *Option[T], optb *Option[U]) *Option[U] {
 }
 
 func (o *Option[U]) AndThen(optb *Option[U], f func(U) *Option[U]) *Option[U] {
+	o.consumed = true
+
 	if o.some {
 		return f(o.value)
 	}
@@ -220,6 +312,8 @@ func (o *Option[U]) AndThen(optb *Option[U], f func(U) *Option[U]) *Option[U] {
 }
 
 func OptionAndThen[T, U any](o *Option[T], f func(T) *Option[U]) *Option[U] {
+	o.consumed = true
+
 	if o.some {
 		return f(o.value)
 	}
@@ -227,6 +321,8 @@ func OptionAndThen[T, U any](o *Option[T], f func(T) *Option[U]) *Option[U] {
 }
 
 func (o *Option[T]) Filter(predicate func(T) bool) *Option[T] {
+	o.consumed = true
+
 	if o.some && predicate(o.value) {
 		return Some[T](o.value)
 	}
@@ -234,6 +330,8 @@ func (o *Option[T]) Filter(predicate func(T) bool) *Option[T] {
 }
 
 func (o *Option[T]) Or(optb *Option[T]) *Option[T] {
+	o.consumed = true
+
 	if o.some {
 		return o
 	}
@@ -241,6 +339,8 @@ func (o *Option[T]) Or(optb *Option[T]) *Option[T] {
 }
 
 func (o *Option[T]) OrElse(f func() *Option[T]) *Option[T] {
+	o.consumed = true
+
 	if o.some {
 		return o
 	}
@@ -248,6 +348,8 @@ func (o *Option[T]) OrElse(f func() *Option[T]) *Option[T] {
 }
 
 func TryOr[T, U, E any](o *Option[T], f func(T) U, e E) *result.Result[U, E] {
+	o.consumed = true
+
 	if o.some {
 		return result.Ok[U, E](f(o.value))
 	}
@@ -255,6 +357,8 @@ func TryOr[T, U, E any](o *Option[T], f func(T) U, e E) *result.Result[U, E] {
 }
 
 func TryOrElse[T, U, E any](o *Option[T], f func(T) U, closure func() *result.Result[U, E]) *result.Result[U, E] {
+	o.consumed = true
+
 	if o.some {
 		return result.Ok[U, E](f(o.value))
 	}
@@ -265,6 +369,8 @@ func TryOrElse[T, U, E any](o *Option[T], f func(T) U, closure func() *result.Re
 }
 
 func (o *Option[T]) Xor(optb *Option[T]) *Option[T] {
+	o.consumed = true
+
 	if o.some && !optb.some {
 		return o
 	}
@@ -278,6 +384,8 @@ func (o *Option[T]) Insert(value T) *T {
 	o.value = value
 	o.some = true
 	o.assigned = true
+	o.consumed = false
+
 	return &o.value
 }
 
@@ -286,6 +394,7 @@ func (o *Option[T]) GetOrInsert(value T) *T {
 		o.value = value
 		o.some = true
 		o.assigned = true
+		o.consumed = false
 	}
 	return &o.value
 }
@@ -296,6 +405,7 @@ func (o *Option[T]) GetOrInsertDefault() *T {
 		o.value = zero
 		o.some = true
 		o.assigned = true
+		o.consumed = false
 	}
 	return &o.value
 }
@@ -305,6 +415,7 @@ func (o *Option[T]) GetOrInsertWith(f func() T) *T {
 		o.value = f()
 		o.some = true
 		o.assigned = true
+		o.consumed = false
 	}
 	return &o.value
 }
