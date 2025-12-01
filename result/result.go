@@ -11,16 +11,16 @@ type Result[T, E any] struct {
 	assigned bool
 }
 
-func Ok[T, E any](v T) Result[T, E] {
-	return Result[T, E]{
+func Ok[T, E any](v T) *Result[T, E] {
+	return &Result[T, E]{
 		value:    v,
 		ok:       true,
 		assigned: true,
 	}
 }
 
-func Err[T, E any](e E) Result[T, E] {
-	return Result[T, E]{
+func Err[T, E any](e E) *Result[T, E] {
+	return &Result[T, E]{
 		err:      e,
 		ok:       false,
 		assigned: true,
@@ -57,7 +57,7 @@ func (r Result[T, E]) IsOk() bool {
 	return r.ok
 }
 
-func (r Result[T, E]) IsOkAnd(f func(T) bool) bool {
+func (r *Result[T, E]) IsOkAnd(f func(T) bool) bool {
 	if !r.ok {
 		return false
 	}
@@ -68,35 +68,35 @@ func (r Result[T, E]) IsErr() bool {
 	return !r.ok
 }
 
-func (r Result[T, E]) IsErrAnd(f func(E) bool) bool {
+func (r *Result[T, E]) IsErrAnd(f func(E) bool) bool {
 	if r.ok {
 		return false
 	}
 	return f(r.err)
 }
 
-func Map[T, E, U any](r Result[T, E], f func(T) U) Result[U, E] {
+func Map[T, E, U any](r *Result[T, E], f func(T) U) *Result[U, E] {
 	if r.ok {
 		return Ok[U, E](f(r.value))
 	}
 	return Err[U, E](r.err)
 }
 
-func MapOr[T, E, U any](r Result[T, E], def U, f func(T) U) U {
+func MapOr[T, E, U any](r *Result[T, E], def U, f func(T) U) U {
 	if r.ok {
 		return f(r.value)
 	}
 	return def
 }
 
-func MapOrElse[T, E, U any](r Result[T, E], def func(E) U, f func(T) U) U {
+func MapOrElse[T, E, U any](r *Result[T, E], def func(E) U, f func(T) U) U {
 	if r.ok {
 		return f(r.value)
 	}
 	return def(r.err)
 }
 
-func MapOrDefault[T, E, U any](r Result[T, E], f func(T) U) U {
+func MapOrDefault[T, E, U any](r *Result[T, E], f func(T) U) U {
 	if r.ok {
 		return f(r.value)
 	}
@@ -104,42 +104,42 @@ func MapOrDefault[T, E, U any](r Result[T, E], f func(T) U) U {
 	return zero
 }
 
-func MapErr[T, E, F any](r Result[T, E], f func(E) F) Result[T, F] {
+func MapErr[T, E, F any](r *Result[T, E], f func(E) F) *Result[T, F] {
 	if r.ok {
 		return Ok[T, F](r.value)
 	}
 	return Err[T, F](f(r.err))
 }
 
-func (r Result[T, E]) Inspect(f func(T)) Result[T, E] {
+func (r *Result[T, E]) Inspect(f func(T)) *Result[T, E] {
 	if r.ok {
 		f(r.value)
 	}
 	return r
 }
 
-func (r Result[T, E]) InspectErr(f func(E)) Result[T, E] {
+func (r *Result[T, E]) InspectErr(f func(E)) *Result[T, E] {
 	if !r.ok {
 		f(r.err)
 	}
 	return r
 }
 
-func (r Result[T, E]) Expect(msg string) T {
+func (r *Result[T, E]) Expect(msg string) T {
 	if r.ok {
 		return r.value
 	}
 	panic(fmt.Sprintf("%s: %v", msg, r.err))
 }
 
-func (r Result[T, E]) Unwrap() T {
+func (r *Result[T, E]) Unwrap() T {
 	if r.ok {
 		return r.value
 	}
 	panic(fmt.Sprintf("called Result.Unwrap() on an Err value: %v", r.err))
 }
 
-func (r Result[T, E]) UnwrapOrDefault() T {
+func (r *Result[T, E]) UnwrapOrDefault() T {
 	if r.ok {
 		return r.value
 	}
@@ -147,65 +147,66 @@ func (r Result[T, E]) UnwrapOrDefault() T {
 	return zero
 }
 
-func (r Result[T, E]) ExpectErr(msg string) E {
+func (r *Result[T, E]) ExpectErr(msg string) E {
 	if r.ok {
 		panic(fmt.Sprintf("%s: %v", msg, r.value))
 	}
 	return r.err
 }
 
-func (r Result[T, E]) UnwrapErr() E {
+func (r *Result[T, E]) UnwrapErr() E {
 	if r.ok {
 		panic(fmt.Sprintf("called Result.UnwrapErr() on an Ok value: %v", r.value))
 	}
 	return r.err
 }
 
-func And[T, E, U any](r Result[T, E], res Result[U, E]) Result[U, E] {
+func And[T, E, U any](r *Result[T, E], res *Result[U, E]) *Result[U, E] {
 	if r.ok {
 		return res
 	}
 	return Err[U, E](r.err)
 }
 
-func AndThen[T, E, U any](r Result[T, E], op func(T) Result[U, E]) Result[U, E] {
+func AndThen[T, E, U any](r *Result[T, E], op func(T) *Result[U, E]) *Result[U, E] {
 	if r.ok {
 		return op(r.value)
 	}
 	return Err[U, E](r.err)
 }
 
-func Or[T, E, F any](r Result[T, E], res Result[T, F]) Result[T, F] {
+func Or[T, E, F any](r *Result[T, E], res *Result[T, F]) *Result[T, F] {
 	if r.ok {
 		return Ok[T, F](r.value)
 	}
 	return res
 }
 
-func OrElse[T, E, F any](r Result[T, E], op func(E) Result[T, F]) Result[T, F] {
+func OrElse[T, E, F any](r *Result[T, E], op func(E) *Result[T, F]) *Result[T, F] {
 	if r.ok {
 		return Ok[T, F](r.value)
 	}
 	return op(r.err)
 }
 
-func Try[T, E, U, F any](r Result[T, E], op func(T) U, closure func(E) Result[U, F]) Result[U, F] {
+func Try[T, E, U, F any](r *Result[T, E], op func(T) U, closure func(E) *Result[U, F]) *Result[U, F] {
 	if r.ok {
 		return Ok[U, F](op(r.value))
 	}
 	closure(r.err)
 	// unreachable
+	fmt.Println("Result unreachable")
 	return closure(r.err)
 }
 
-func (r Result[T, E]) UnwrapOr(def T) T {
+func (r *Result[T, E]) UnwrapOr(def T) T {
 	if r.ok {
 		return r.value
 	}
 	return def
 }
 
-func (r Result[T, E]) UnwrapOrElse(f func(E) T) T {
+func (r *Result[T, E]) UnwrapOrElse(f func(E) T) T {
 	if r.ok {
 		return r.value
 	}

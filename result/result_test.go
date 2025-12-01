@@ -22,8 +22,8 @@ func TestOk(t *testing.T) {
 	c := Ok[int, string](1)
 
 	assert.Equal(t, a, b)
-	assert.Equal(t, a, c)
-	assert.Equal(t, b, c)
+	assert.Equal(t, a, *c)
+	assert.Equal(t, b, *c)
 }
 
 func TestErr(t *testing.T) {
@@ -39,8 +39,8 @@ func TestErr(t *testing.T) {
 	c := Err[int, string]("error")
 
 	assert.Equal(t, a, b)
-	assert.Equal(t, a, c)
-	assert.Equal(t, b, c)
+	assert.Equal(t, a, *c)
+	assert.Equal(t, b, *c)
 }
 
 func TestIsOk(t *testing.T) {
@@ -173,7 +173,7 @@ func TestUnwrap(t *testing.T) {
 }
 
 func TestUnwrapOrDefault(t *testing.T) {
-	parseYear := func(s string) Result[int, string] {
+	parseYear := func(s string) *Result[int, string] {
 		year, err := strconv.Atoi(s)
 		if err != nil {
 			return Err[int, string]("parseYear failed")
@@ -218,7 +218,7 @@ func TestAnd(t *testing.T) {
 }
 
 func TestAndThen(t *testing.T) {
-	sqThenToString := func(x int) Result[string, string] {
+	sqThenToString := func(x int) *Result[string, string] {
 		if x > 100 || x < 0 {
 			return Err[string, string]("overflowed")
 		}
@@ -255,8 +255,8 @@ func TestOr(t *testing.T) {
 }
 
 func TestOrElse(t *testing.T) {
-	sq := func(x int) Result[int, int] { return Ok[int, int](x * x) }
-	err := func(x int) Result[int, int] { return Err[int, int](x) }
+	sq := func(x int) *Result[int, int] { return Ok[int, int](x * x) }
+	err := func(x int) *Result[int, int] { return Err[int, int](x) }
 
 	r := Ok[int, int](2)
 	e := Err[int, int](3)
@@ -269,7 +269,7 @@ func TestOrElse(t *testing.T) {
 
 func TestTry(t *testing.T) {
 	f1 := func(x int) float32 { return float32(x) * 2 }
-	closure := func(e rune) Result[float32, string] { return Err[float32, string](string(e)) }
+	closure := func(e rune) *Result[float32, string] { return Err[float32, string](string(e)) }
 
 	r := Ok[int, rune](1)
 	assert.Equal(t, Try(r, f1, closure), Ok[float32, string](2.0))
@@ -318,7 +318,7 @@ func TestResultWithComplexTypes(t *testing.T) {
 
 func TestChainedOperations(t *testing.T) {
 	// 测试链式操作
-	parse := func(s string) Result[int, string] {
+	parse := func(s string) *Result[int, string] {
 		i, err := strconv.Atoi(s)
 		if err != nil {
 			return Err[int, string]("invalid number")
@@ -326,7 +326,7 @@ func TestChainedOperations(t *testing.T) {
 		return Ok[int, string](i)
 	}
 
-	double := func(x int) Result[int, string] {
+	double := func(x int) *Result[int, string] {
 		if x > 100 {
 			return Err[int, string]("too large")
 		}
