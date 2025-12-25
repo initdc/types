@@ -1,16 +1,18 @@
 package option
 
 import (
-	"github.com/initdc/types/result"
-	"github.com/stretchr/testify/assert"
+	"os/exec"
 	"strconv"
 	"testing"
+
+	"github.com/initdc/types/result"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSome(t *testing.T) {
-  var a = Option[int]{
-		value: 1,
-		some: true,
+	var a = Option[int]{
+		value:    1,
+		some:     true,
 		assigned: true,
 	}
 
@@ -18,15 +20,15 @@ func TestSome(t *testing.T) {
 	b.Some(1)
 
 	c := Some[int](1)
-	
+
 	assert.Equal(t, a, b)
 	assert.Equal(t, a, c)
 	assert.Equal(t, b, c)
 }
 
 func TestNone(t *testing.T) {
-  var a = Option[int]{
-		some: false,
+	var a = Option[int]{
+		some:     false,
 		assigned: true,
 	}
 
@@ -34,7 +36,7 @@ func TestNone(t *testing.T) {
 	b.None()
 
 	c := None[int]()
-	
+
 	assert.Equal(t, a, b)
 	assert.Equal(t, a, c)
 	assert.Equal(t, b, c)
@@ -148,8 +150,8 @@ func TestOptionMapOrElse(t *testing.T) {
 }
 
 func TestOptionMapOrDefault(t *testing.T) {
-	f := func(s string) int { return len(s)}
-  s := Some("hi")
+	f := func(s string) int { return len(s) }
+	s := Some("hi")
 
 	assert.Equal(t, OptionMapOrDefault(s, f), 2)
 
@@ -172,7 +174,6 @@ func TestOkOrElse(t *testing.T) {
 	y := None[string]()
 	assert.Equal(t, OkOrElse(y, func() int { return 0 }), result.Err[string, int](0))
 }
-
 
 func TestOptionAnd(t *testing.T) {
 	x := Some(2)
@@ -326,4 +327,12 @@ func TestReplace(t *testing.T) {
 	old2 := x2.Replace(3)
 	assert.Equal(t, x2, Some(3))
 	assert.Equal(t, old2, None[int]())
+}
+
+func TestOptionFrom(t *testing.T) {
+	fo := OptionFrom(exec.Command("uname").Output())
+	assert.Equal(t, fo, Some([]byte("Linux\n")))
+
+	fno := OptionFrom(exec.Command("unamea").Output())
+	assert.True(t, fno.IsNone())
 }

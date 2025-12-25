@@ -25,6 +25,12 @@ func None[T any]() Option[T] {
 	}
 }
 
+func OptionFrom[T any](v T, err error) Option[T] {
+	if err != nil {
+		return None[T]()
+	}
+	return Some[T](v)
+}
 
 func (o *Option[T]) Some(v T) {
 	if o.assigned {
