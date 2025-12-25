@@ -38,8 +38,8 @@ func BenchmarkOptionSomeArray(b *testing.B) {
 	var a [8192]int32
 
 	for i := 0; i < b.N; i++ {
-		var o = new(Option[[8192]int32])
-		o.Some(a)
+		var o = new(Option[*[8192]int32])
+		o.Some(&a)
 	}
 
 	b.StopTimer()
@@ -88,7 +88,7 @@ func BenchmarkSomeArray(b *testing.B) {
 	var a [8192]int32
 
 	for i := 0; i < b.N; i++ {
-		Some[[8192]int32](a)
+		Some[*[8192]int32](&a)
 	}
 
 	b.StopTimer()
@@ -140,8 +140,8 @@ func BenchmarkResultOkArray(b *testing.B) {
 	var a [8192]int32
 
 	for i := 0; i < b.N; i++ {
-		var r = new(Result[[8192]int32, [8192]int32])
-		r.Ok(a)
+		var r = new(Result[*[8192]int32, *[8192]int32])
+		r.Ok(&a)
 	}
 
 	b.StopTimer()
@@ -154,8 +154,8 @@ func BenchmarkResultErrArray(b *testing.B) {
 	var a [8192]int32
 
 	for i := 0; i < b.N; i++ {
-		var r = new(Result[[8192]int32, [8192]int32])
-		r.Err(a)
+		var r = new(Result[*[8192]int32, *[8192]int32])
+		r.Err(&a)
 	}
 
 	b.StopTimer()
@@ -189,7 +189,7 @@ func BenchmarkOkArray(b *testing.B) {
 
 	var a [8192]int32
 	for i := 0; i < b.N; i++ {
-		Ok[[8192]int32, [8192]int32](a)
+		Ok[*[8192]int32, *[8192]int32](&a)
 	}
 
 	b.StopTimer()
@@ -201,7 +201,7 @@ func BenchmarkErrArray(b *testing.B) {
 
 	var a [8192]int32
 	for i := 0; i < b.N; i++ {
-		Err[[8192]int32, [8192]int32](a)
+		Err[*[8192]int32, *[8192]int32](&a)
 	}
 
 	b.StopTimer()
