@@ -35,3 +35,5 @@ jobs:
         run: rake test_option
       - name: Test result
         run: rake test_result
+      - name: Test bench
+        run: rake bench
