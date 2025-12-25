@@ -45,12 +45,19 @@ func (r *Result[T, E]) Err(e E) {
 	r.assigned = true
 }
 
+func From[T any](v T, err error) Result[T, error] {
+	if err != nil {
+		return Err[T, error](err)
+	}
+	return Ok[T, error](v)
+}
+
 func (r Result[T, E]) Valid() bool {
-  return r.ok
+	return r.ok
 }
 
 func (r Result[T, E]) Assigned() bool {
-  return r.assigned
+	return r.assigned
 }
 
 func (r Result[T, E]) IsOk() bool {

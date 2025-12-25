@@ -3,15 +3,17 @@ package result
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
+	"os/exec"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOk(t *testing.T) {
 	var a = Result[int, string]{
-		value: 1,
-		ok: true,
+		value:    1,
+		ok:       true,
 		assigned: true,
 	}
 
@@ -27,8 +29,8 @@ func TestOk(t *testing.T) {
 
 func TestErr(t *testing.T) {
 	var a = Result[int, string]{
-		err: "error",
-		ok: false,
+		err:      "error",
+		ok:       false,
 		assigned: true,
 	}
 
@@ -411,4 +413,12 @@ func TestResultWithInterfaces(t *testing.T) {
 	r2.Err("interface error")
 	assert.True(t, r2.IsErr())
 	assert.Equal(t, r2.UnwrapErr(), "interface error")
+}
+
+func TestFrom(t *testing.T) {
+	fr := From(exec.Command("uname").Output())
+	assert.Equal(t, fr, Ok[[]byte, error]([]byte("Linux\n")))
+
+	fno := From(exec.Command("unamea").Output())
+	assert.True(t, fno.IsErr())
 }
