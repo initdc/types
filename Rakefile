@@ -19,3 +19,11 @@ end
 task :test_option do
   sh "go test -cover -v ./option"
 end
+
+task :e2e do
+  sh "go test -cover -v ./e2e"
+end
+
+task :bench do
+  sh "go test -bench=. -benchmem -cpu='1,2,4'"
+end
