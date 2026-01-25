@@ -7,6 +7,7 @@ on:
     branches:
       - master
       - dev
+      - wip
 
 concurrency:
   group: ${{ github.sha }}
@@ -29,11 +30,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
-      # - name: Install Rake
-      #   run: gem install rake
+      - uses: extractions/setup-crate@v1
+        with:
+          repo: casey/just
       - name: Test option
-        run: rake test_option
+        run: just test option
       - name: Test result
-        run: rake test_result
+        run: just test result
       - name: Test bench
-        run: rake bench
+        run: just bench

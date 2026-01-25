@@ -16,7 +16,6 @@ func TestE2E(t *testing.T) {
 
 	n1 := None[int]()
 
-
 	// Result
 	var r1 Result[int, string]
 	r1.Ok(1)
