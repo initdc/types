@@ -4,7 +4,7 @@ Bring the Rust [Result Option] types to Golang
 
 ## Installation
 
-  `go get github.com/initdc/types`
+  `go get github.com/initdc/types@dev`
 
 ## Usage
 
