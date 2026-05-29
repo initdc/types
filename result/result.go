@@ -82,28 +82,28 @@ func (r Result[T, E]) IsErrAnd(f func(E) bool) bool {
 	return f(r.err)
 }
 
-func Map[T, E, U any](r Result[T, E], f func(T) U) Result[U, E] {
+func (r Result[T, E]) Map[U any](f func(T) U) Result[U, E] {
 	if r.ok {
 		return Ok[U, E](f(r.value))
 	}
 	return Err[U, E](r.err)
 }
 
-func MapOr[T, E, U any](r Result[T, E], def U, f func(T) U) U {
+func (r Result[T, E]) MapOr[U any](def U, f func(T) U) U {
 	if r.ok {
 		return f(r.value)
 	}
 	return def
 }
 
-func MapOrElse[T, E, U any](r Result[T, E], def func(E) U, f func(T) U) U {
+func (r Result[T, E]) MapOrElse[U any](def func(E) U, f func(T) U) U {
 	if r.ok {
 		return f(r.value)
 	}
 	return def(r.err)
 }
 
-func MapOrDefault[T, E, U any](r Result[T, E], f func(T) U) U {
+func (r Result[T, E]) MapOrDefault[U any](f func(T) U) U {
 	if r.ok {
 		return f(r.value)
 	}
@@ -111,7 +111,7 @@ func MapOrDefault[T, E, U any](r Result[T, E], f func(T) U) U {
 	return zero
 }
 
-func MapErr[T, E, F any](r Result[T, E], f func(E) F) Result[T, F] {
+func (r Result[T, E]) MapErr[F any](f func(E) F) Result[T, F] {
 	if r.ok {
 		return Ok[T, F](r.value)
 	}
@@ -168,28 +168,28 @@ func (r Result[T, E]) UnwrapErr() E {
 	return r.err
 }
 
-func And[T, E, U any](r Result[T, E], res Result[U, E]) Result[U, E] {
+func (r Result[T, E]) And[U any](res Result[U, E]) Result[U, E] {
 	if r.ok {
 		return res
 	}
 	return Err[U, E](r.err)
 }
 
-func AndThen[T, E, U any](r Result[T, E], op func(T) Result[U, E]) Result[U, E] {
+func (r Result[T, E]) AndThen[U any](op func(T) Result[U, E]) Result[U, E] {
 	if r.ok {
 		return op(r.value)
 	}
 	return Err[U, E](r.err)
 }
 
-func Or[T, E, F any](r Result[T, E], res Result[T, F]) Result[T, F] {
+func (r Result[T, E]) Or[F any](res Result[T, F]) Result[T, F] {
 	if r.ok {
 		return Ok[T, F](r.value)
 	}
 	return res
 }
 
-func OrElse[T, E, F any](r Result[T, E], op func(E) Result[T, F]) Result[T, F] {
+func (r Result[T, E]) OrElse[F any](op func(E) Result[T, F]) Result[T, F] {
 	if r.ok {
 		return Ok[T, F](r.value)
 	}

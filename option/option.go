@@ -115,7 +115,7 @@ func (o Option[T]) UnwrapOrDefault() T {
 	return zero
 }
 
-func OptionMap[T, U any](o Option[T], f func(T) U) Option[U] {
+func (o Option[T]) Map[U any](f func(T) U) Option[U] {
 	if o.some {
 		return Some[U](f(o.value))
 	}
@@ -129,21 +129,21 @@ func (o Option[T]) Inspect(f func(T)) Option[T] {
 	return o
 }
 
-func OptionMapOr[T, U any](o Option[T], def U, f func(T) U) U {
+func (o Option[T]) MapOr[U any](def U, f func(T) U) U {
 	if o.some {
 		return f(o.value)
 	}
 	return def
 }
 
-func OptionMapOrElse[T, U any](o Option[T], def func() U, f func(T) U) U {
+func (o Option[T]) MapOrElse[U any](def func() U, f func(T) U) U {
 	if o.some {
 		return f(o.value)
 	}
 	return def()
 }
 
-func OptionMapOrDefault[T, U any](o Option[T], f func(T) U) U {
+func (o Option[T]) MapOrDefault[U any](f func(T) U) U {
 	if o.some {
 		return f(o.value)
 	}
@@ -151,28 +151,28 @@ func OptionMapOrDefault[T, U any](o Option[T], f func(T) U) U {
 	return zero
 }
 
-func OkOr[T, E any](o Option[T], err E) result.Result[T, E] {
+func (o Option[T]) OkOr[E any](err E) result.Result[T, E] {
 	if o.some {
 		return result.Ok[T, E](o.value)
 	}
 	return result.Err[T, E](err)
 }
 
-func OkOrElse[T, E any](o Option[T], err func() E) result.Result[T, E] {
+func (o Option[T]) OkOrElse[E any](err func() E) result.Result[T, E] {
 	if o.some {
 		return result.Ok[T, E](o.value)
 	}
 	return result.Err[T, E](err())
 }
 
-func OptionAnd[T, U any](o Option[T], optb Option[U]) Option[U] {
+func (o Option[T]) And[U any](optb Option[U]) Option[U] {
 	if o.some {
 		return optb
 	}
 	return None[U]()
 }
 
-func OptionAndThen[T, U any](o Option[T], f func(T) Option[U]) Option[U] {
+func (o Option[T]) AndThen[U any](f func(T) Option[U]) Option[U] {
 	if o.some {
 		return f(o.value)
 	}

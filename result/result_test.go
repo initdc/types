@@ -101,17 +101,17 @@ func TestIsErrAnd(t *testing.T) {
 
 func TestMap(t *testing.T) {
 	r := Ok[int, string](1)
-	assert.Equal(t, Map(r, func(i int) string { return fmt.Sprintf("%d", i) }), Ok[string, string]("1"))
+	assert.Equal(t, r.Map(func(i int) string { return fmt.Sprintf("%d", i) }), Ok[string, string]("1"))
 }
 
 func TestMapOr(t *testing.T) {
 	f := func(v string) int { return len(v) }
 
 	r := Ok[string, string]("foo")
-	assert.Equal(t, MapOr(r, 42, f), 3)
+	assert.Equal(t, r.MapOr(42, f), 3)
 
 	e := Err[string, string]("bar")
-	assert.Equal(t, MapOr(e, 42, f), 42)
+	assert.Equal(t, e.MapOr(42, f), 42)
 }
 
 func TestMapOrElse(t *testing.T) {
@@ -120,30 +120,30 @@ func TestMapOrElse(t *testing.T) {
 	f2 := func(v string) int { return len(v) }
 
 	r := Ok[string, string]("foo")
-	assert.Equal(t, MapOrElse(r, f1, f2), 3)
+	assert.Equal(t, r.MapOrElse(f1, f2), 3)
 
 	e := Err[string, string]("bar")
-	assert.Equal(t, MapOrElse(e, f1, f2), 42)
+	assert.Equal(t, e.MapOrElse(f1, f2), 42)
 }
 
 func TestMapOrDefault(t *testing.T) {
 	f := func(v string) int { return len(v) }
 
 	r := Ok[string, string]("foo")
-	assert.Equal(t, MapOrDefault(r, f), 3)
+	assert.Equal(t, r.MapOrDefault(f), 3)
 
 	e := Err[string, string]("bar")
-	assert.Equal(t, MapOrDefault(e, f), 0)
+	assert.Equal(t, e.MapOrDefault(f), 0)
 }
 
 func TestMapErr(t *testing.T) {
 	stringify := func(x int) string { return fmt.Sprintf("%d", x) }
 
 	r := Ok[int, int](2)
-	assert.Equal(t, MapErr(r, stringify), Ok[int, string](2))
+	assert.Equal(t, r.MapErr(stringify), Ok[int, string](2))
 
 	e := Err[int, int](13)
-	assert.Equal(t, MapErr(e, stringify), Err[int, string]("13"))
+	assert.Equal(t, e.MapErr(stringify), Err[int, string]("13"))
 }
 
 func TestInspect(t *testing.T) {
@@ -203,19 +203,19 @@ func TestUnwrapErr(t *testing.T) {
 func TestAnd(t *testing.T) {
 	x1 := Ok[int, string](2)
 	y1 := Err[string, string]("late error")
-	assert.Equal(t, And(x1, y1), y1)
+	assert.Equal(t, x1.And(y1), y1)
 
 	x2 := Err[int, string]("early error")
 	y2 := Ok[string, string]("foo")
-	assert.Equal(t, And(x2, y2), Err[string, string]("early error"))
+	assert.Equal(t, x2.And(y2), Err[string, string]("early error"))
 
 	x3 := Err[int, string]("not a 2")
 	y3 := Err[string, string]("late error")
-	assert.Equal(t, And(x3, y3), Err[string, string]("not a 2"))
+	assert.Equal(t, x3.And(y3), Err[string, string]("not a 2"))
 
 	x4 := Ok[int, string](2)
 	y4 := Err[string, string]("different result type")
-	assert.Equal(t, And(x4, y4), y4)
+	assert.Equal(t, x4.And(y4), y4)
 }
 
 func TestAndThen(t *testing.T) {
@@ -227,32 +227,32 @@ func TestAndThen(t *testing.T) {
 	}
 
 	r1 := Ok[int, string](2)
-	assert.Equal(t, AndThen(r1, sqThenToString), Ok[string, string]("2"))
+	assert.Equal(t, r1.AndThen(sqThenToString), Ok[string, string]("2"))
 
 	r2 := Ok[int, string](1000)
-	assert.Equal(t, AndThen(r2, sqThenToString), Err[string, string]("overflowed"))
+	assert.Equal(t, r2.AndThen(sqThenToString), Err[string, string]("overflowed"))
 
 	r3 := Err[int, string]("error")
-	assert.Equal(t, AndThen(r3, sqThenToString), Err[string, string]("error"))
+	assert.Equal(t, r3.AndThen(sqThenToString), Err[string, string]("error"))
 }
 
 func TestOr(t *testing.T) {
 	x1 := Ok[int, int](2)
 	y1 := Err[int, string]("late error")
-	assert.Equal(t, Or(x1, y1), Ok[int, string](2))
+	assert.Equal(t, x1.Or(y1), Ok[int, string](2))
 
 	x2 := Err[int, string]("early error")
 	y2 := Ok[int, int](2)
 
-	assert.Equal(t, Or(x2, y2), y2)
+	assert.Equal(t, x2.Or(y2), y2)
 
 	x3 := Err[int, string]("not a 2")
 	y3 := Err[int, string]("late error")
-	assert.Equal(t, Or(x3, y3), y3)
+	assert.Equal(t, x3.Or(y3), y3)
 
 	x4 := Ok[int, string](2)
 	y4 := Ok[int, int](100)
-	assert.Equal(t, Or(x4, y4), Ok[int, int](2))
+	assert.Equal(t, x4.Or(y4), Ok[int, int](2))
 }
 
 func TestOrElse(t *testing.T) {
@@ -262,10 +262,10 @@ func TestOrElse(t *testing.T) {
 	r := Ok[int, int](2)
 	e := Err[int, int](3)
 
-	assert.Equal(t, OrElse(OrElse(r, sq), sq), Ok[int, int](2))
-	assert.Equal(t, OrElse(OrElse(r, err), sq), Ok[int, int](2))
-	assert.Equal(t, OrElse(OrElse(e, sq), err), Ok[int, int](9))
-	assert.Equal(t, OrElse(OrElse(e, err), err), Err[int, int](3))
+	assert.Equal(t, r.OrElse(sq).OrElse(sq), Ok[int, int](2))
+	assert.Equal(t, r.OrElse(err).OrElse(sq), Ok[int, int](2))
+	assert.Equal(t, e.OrElse(sq).OrElse(err), Ok[int, int](9))
+	assert.Equal(t, e.OrElse(err).OrElse(err), Err[int, int](3))
 }
 
 func TestUnwrapOr(t *testing.T) {
@@ -324,12 +324,12 @@ func TestChainedOperations(t *testing.T) {
 	}
 
 	// 成功链
-	result := AndThen(parse("42"), double)
+	result := parse("42").AndThen(double)
 	assert.True(t, result.IsOk())
 	assert.Equal(t, result.Unwrap(), 84)
 
 	// 失败链
-	result2 := AndThen(parse("200"), double)
+	result2 := parse("200").AndThen(double)
 	assert.True(t, result2.IsErr())
 	assert.Equal(t, result2.UnwrapErr(), "too large")
 }
